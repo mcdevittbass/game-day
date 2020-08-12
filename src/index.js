@@ -28,7 +28,8 @@ let game = new Phaser.Game(config);
 let cursors;
 let player;
 let asteroids;
-let timer;
+let asteroidCreate;
+let trashCreate;
 let trash;
 let emitter;
 let gameOver = false;
@@ -51,18 +52,20 @@ function preload ()
 
 function create ()
 {
+    //render background image
     this.add.image(400, 300, 'sky');
+    //render scoreboard
     scoreText = this.add.text(16, 16, `Score: 0`, { fontSize: '32px', fill: '#FFF' });
-
+    //add player sprite
     player = this.physics.add.sprite(400, 100, 'truck');
     player.setBounce(0);
     player.setCollideWorldBounds(true);
-
+    //create cursor keys for arrow usage
     cursors = this.input.keyboard.createCursorKeys();
-
+    //create groups of sprites 
     asteroids = this.physics.add.group();
     trash = this.physics.add.group();
-
+    //give asteroids trails
     let particles = this.add.particles('blue');
 
     emitter = particles.createEmitter({
@@ -71,49 +74,31 @@ function create ()
         blendMode: 'ADD',
         angle: {min: 15, max: 90}
     });
-    
-    timer = this.time.addEvent({
+    //create asteroid instances over time
+    asteroidCreate = this.time.addEvent({
         timer: Phaser.Timer, 
         delay: Phaser.Math.Between(1000, 3000), 
         loop: true, 
         callback: createAsteroids
     }); 
-
+    //create trash instances over time
     trashCreate = this.time.addEvent({
         timer: Phaser.Timer,
         delay: Phaser.Math.Between(500, 2000),
         loop: true,
         callback: createTrash
     })
-
+    //create collider functionality
     this.physics.add.collider(player, asteroids, hitAsteroid, null, this);
     this.physics.add.collider(player, trash, eatTrash, null, this);
     
 }
-function createAsteroids() {
-    let instance = asteroids.create(Phaser.Math.Between(0, 800), 0, 'asteroid');
-    instance.setVelocityY(Phaser.Math.Between(100, 400));
-    emitter.startFollow(instance);
-}
-function hitAsteroid (player, asteroid) {
-    this.physics.pause();
-    gameOver = true;
-}
-function createTrash() {
-    let instance = trash.create(0, Phaser.Math.Between(0, 600), trashArr[Phaser.Math.Between(0, trashArr.length-1)]);
-    instance.setVelocityX(Phaser.Math.Between(50, 300));
-}
-function eatTrash(player, trashInstance) {
-    trashInstance.destroy();
-    score += 10;
-    scoreText.setText('Score: ' + score);
-}
 
 function update() {
-    if(!gameOver) {
+    //create movement with arrow presses
+    if (!gameOver) {
         if (cursors.up.isDown) {
             player.y -= 10;
-            console.log("up key");
         }
         else if (cursors.down.isDown) {
             player.y += 10;
@@ -123,23 +108,35 @@ function update() {
         }
         else if (cursors.right.isDown) {
             player.x += 10;
-        }
+        } 
     }
-
+    //end game
     if(gameOver) {
-        timer.paused = true;
+        asteroidCreate.paused = true;
         trashCreate.paused = true;
         this.add.text(200, 200, 'GAME OVER', { fontSize: '64px', fill: '#FFF'})
     }
 }
 
-// asteroids = this.physics.add.group({ 
-    //     key: 'asteroid', 
-    //     repeat: 11, 
-    //     setXY: { x: 0, y: Phaser.Math.Between(0, 600)},
-    //     stepY: 70 
-    // })
-
-    //let emitter = new Phaser.Events.EventEmitter();
-    //emitter.on('addAsteroid', creatAsteroids, this);
-    //emitter.emit('addAsteroid');
+//create instance of asteroid and set placement and velocity randomly
+function createAsteroids() {
+    let instance = asteroids.create(Phaser.Math.Between(0, 800), 0, 'asteroid');
+    instance.setVelocityY(Phaser.Math.Between(100, 400));
+    emitter.startFollow(instance);
+}
+//end game if collision with asteroid
+function hitAsteroid (player, asteroid) {
+    this.physics.pause();
+    gameOver = true;
+}
+//create instance of trash and set placement, image, and velocity randomly
+function createTrash() {
+    let instance = trash.create(0, Phaser.Math.Between(0, 600), trashArr[Phaser.Math.Between(0, trashArr.length-1)]);
+    instance.setVelocityX(Phaser.Math.Between(50, 300));
+}
+//add points for collision with trash and remove that instance
+function eatTrash(player, trashInstance) {
+    trashInstance.destroy();
+    score += 10;
+    scoreText.setText('Score: ' + score);
+}
